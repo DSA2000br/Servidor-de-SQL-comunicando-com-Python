@@ -1,0 +1,169 @@
+--Tabelas
+
+CREATE TABLE cliente ( --contas
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL,
+    senha VARCHAR(200) NOT NULL,
+    telefone VARCHAR(200) NOT NULL,
+    endereco VARCHAR(200) NOT NULL,
+    cpf CHAR(11) NOT null,
+    cargo VARCHAR(200) NOT null --Se é cliente, funcionario ou adm
+);
+select * from cliente u
+
+CREATE table task(
+	id SERIAL PRIMARY KEY,
+	tittle VARCHAR(255) NOT NULL,
+	user_id INTEGER,
+	FOREIGN KEY (user_id) REFERENCES cliente(id)
+	);
+select * from task t
+
+CREATE TABLE produto (
+    codigo_produto SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    descricao VARCHAR(300),
+    preco NUMERIC(10,2) NOT NULL CHECK (preco >= 0),
+    estoque INTEGER NOT NULL DEFAULT 0 CHECK (estoque >= 0)
+);
+
+CREATE TABLE venda (
+    numero_venda INTEGER PRIMARY KEY,
+    data_venda DATE NOT NULL DEFAULT CURRENT_DATE,
+    horario TIME NOT NULL DEFAULT CURRENT_TIME,
+    valor_total NUMERIC(10,2) DEFAULT 0 CHECK (valor_total >= 0),
+    codigo_cliente INTEGER NOT NULL,
+    codigo_funcionario INTEGER NOT NULL,
+
+    CONSTRAINT fk_venda_cliente
+        FOREIGN KEY (codigo_cliente)
+        REFERENCES cliente(id),
+
+    CONSTRAINT fk_venda_funcionario
+        FOREIGN KEY (codigo_funcionario)
+        REFERENCES cliente(id)
+);
+
+CREATE TABLE item_venda (
+    numero_venda INTEGER NOT NULL,
+    codigo_produto INTEGER NOT NULL,
+    quantidade INTEGER NOT NULL,
+    preco_unitario NUMERIC(10,2) NOT NULL,
+
+    CONSTRAINT pk_item_venda
+        PRIMARY KEY (numero_venda, codigo_produto),
+
+    CONSTRAINT fk_item_venda_venda
+        FOREIGN KEY (numero_venda)
+        REFERENCES venda(numero_venda),
+
+    CONSTRAINT fk_item_venda_produto
+        FOREIGN KEY (codigo_produto)
+        REFERENCES produto(codigo_produto),
+
+    CONSTRAINT chk_item_quantidade
+        CHECK (quantidade > 0),
+
+    CONSTRAINT chk_item_preco
+        CHECK (preco_unitario >= 0)
+);
+
+-- 2. CRUD: CREATE, READ, UPDATE e DELETE
+
+INSERT INTO cliente (nome, email, senha, telefone, endereco, cpf, cargo)
+VALUES ('Marina Silva', 'marina@email.com', 'hash_senha_123', '82999990001', 'Rua A, 100 - Maceió', '12345678901', 'Cliente');
+
+INSERT INTO cliente (nome, email, senha, cargo, telefone, endereco, cpf) -- ADM
+VALUES ('Daniel Santos dos Anjos Silva', 'ADMIN', '12345', 'Administrador', '12345678911', 'null', 'null');
+
+INSERT INTO produto (nome, descricao, preco, estoque)
+VALUES
+    ('Teclado Mecânico', 'Switch blue ABNT2', 249.90, 15),
+    ('Notebook da Xuxa', 'Processador Intel CELERON placa de video integrada, 1 Giga de armazenamento, 32 megas de RAM, acompanha carregador e não faz lições de casa', 419.99, 67),
+    ('Mouse Gamer', 'Sensor óptico 12000 DPI', 129.50, 25);
+
+INSERT INTO task (tittle, user_id)
+VALUES ('Confirmar endereço de entrega', 1);
+
+INSERT INTO venda (numero_venda, valor_total, codigo_cliente, codigo_funcionario)
+VALUES (1001, 379.40, 1, 2);
+
+INSERT INTO item_venda (numero_venda, codigo_produto, quantidade, preco_unitario)
+VALUES
+    (1001, 1, 1, 249.90),
+    (1001, 2, 1, 129.50);
+
+-- READ (SELECT)
+SELECT id, nome, email, telefone, cpf, cargo
+FROM cliente
+ORDER BY id;
+
+SELECT numero_venda, data_venda, horario, valor_total
+FROM venda
+WHERE numero_venda = 1001;
+
+-- UPDATE
+UPDATE produto
+SET preco = 229.90,
+    estoque = estoque - 1
+WHERE codigo_produto = 1;
+
+UPDATE task
+SET tittle = 'Entrega concluída com sucesso'
+WHERE id = 1;
+
+-- DELETE
+DELETE FROM item_venda
+WHERE numero_venda = 1001 AND codigo_produto = 2;
+
+DELETE FROM task
+WHERE id = 1;
+
+-- Join: Vendas com nome do cliente e do funcionário (INNER JOIN)
+SELECT
+    v.numero_venda,
+    v.data_venda,
+    v.valor_total,
+    c.nome AS nome_cliente,
+    f.nome AS nome_funcionario,
+    f.cargo
+FROM venda v
+INNER JOIN cliente c ON v.codigo_cliente = c.codigo_cliente
+INNER JOIN funcionario f ON v.codigo_funcionario = f.codigo_funcionario;
+
+-- Join: Itens detalhados de cada venda (INNER JOIN em 4 tabelas)
+SELECT
+    v.numero_venda,
+    c.nome AS cliente,
+    p.nome AS produto,
+    iv.quantidade,
+    iv.preco_unitario,
+    (iv.quantidade * iv.preco_unitario) AS subtotal_item
+FROM item_venda iv
+INNER JOIN venda v ON iv.numero_venda = v.numero_venda
+INNER JOIN cliente c ON v.codigo_cliente = c.codigo_cliente
+INNER JOIN produto p ON iv.codigo_produto = p.codigo_produto
+ORDER BY v.numero_venda, p.nome;
+
+-- Join: Clientes e suas tarefas, incluindo quem não tem tarefa (LEFT JOIN)
+SELECT
+    c.codigo_cliente,
+    c.nome AS cliente,
+    t.id AS id_task,
+    COALESCE(t.tittle, 'Sem tarefa cadastrada') AS tarefa
+FROM cliente c
+LEFT JOIN task t ON c.codigo_cliente = t.user_id
+ORDER BY c.codigo_cliente;
+
+-- Join: Funcionários e quantidade de vendas realizadas (LEFT JOIN + agregação)
+SELECT
+    f.codigo_funcionario,
+    f.nome AS funcionario,
+    f.cargo,
+    COUNT(v.numero_venda) AS total_vendas,
+    COALESCE(SUM(v.valor_total), 0) AS faturamento_total
+FROM funcionario f
+LEFT JOIN venda v ON f.codigo_funcionario = v.codigo_funcionario
+GROUP BY f.codigo_funcionario, f.nome, f.cargo
+ORDER BY faturamento_total DESC;
