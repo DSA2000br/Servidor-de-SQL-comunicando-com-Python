@@ -1,0 +1,40 @@
+[git status]
+verifica a situação atual do seu repositório
+Ele mostra:
+- Qual branch você está utilizando.
+- Se seu projeto está sincronizado com o GitHub.
+- Quais arquivos foram modificados.
+- Quais arquivos foram excluídos.
+- Quais arquivos são novos.
+- Quais alterações estão prontas para serem enviadas.
+
+[git add .]
+prepara os arquivos modificados para serem registrados no próximo commit
+O ponto . significa que você deseja adicionar todas as alterações da pasta atual e suas subpastas.
+Por exemplo:
+- Arquivos novos serão adicionados.
+- Arquivos modificados serão preparados.
+- Exclusões também serão registradas.
+
+[git commit -m]
+registra as alterações que foram preparadas pelo git add
+A parte -m permite escrever uma mensagem explicando o que foi alterado
+git commit -m "Organizando arquivos do projeto"
+O commit fica salvo no histórico local do Git, mas ainda não foi enviado ao GitHub.
+
+[git push]
+envia os commits locais para o repositório remoto
+você faz as alterações no seu computador e registra tudo com git commit
+e o git push envia esses registros para o github atualizando o repositório remoto
+
+[git pull]
+buscar as atualizações do github e integrá-las ao seu projeto local
+Por exemplo:
+1 Você modifica um arquivo diretamente no GitHub.
+2 Seu computador continua com a versão antiga.
+3 Você executa git pull.
+4 O Git atualiza os arquivos locais com as alterações remotas.
+
+[git clone]
+copiar um repositório remoto para seu computador
+git clone URL_DO_REPOSITORIO
