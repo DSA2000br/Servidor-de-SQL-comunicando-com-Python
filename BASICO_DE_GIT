@@ -17,6 +17,7 @@ Por exemplo:
 - Exclusões também serão registradas.
 
 [git commit -m]
+[git commit --amend -m] altera a mensagem do último commit
 registra as alterações que foram preparadas pelo git add
 A parte -m permite escrever uma mensagem explicando o que foi alterado
 git commit -m "Organizando arquivos do projeto"
