@@ -1,1 +1,1 @@
-# Servidor-de-SQL-comunicando-com-Python
+# Servidor-de-DBeaver(Postegres)-comunicando-com-Python
