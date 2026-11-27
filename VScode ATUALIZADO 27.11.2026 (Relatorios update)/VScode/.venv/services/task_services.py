@@ -74,17 +74,15 @@ def join_vendas_cliente_funcionario():
                 v.data_venda,
                 v.valor_total,
                 c.nome AS nome_cliente,
-                f.nome AS nome_funcionario,
-                f.cargo
+                c.cargo AS cargo_cliente
             FROM venda v
             INNER JOIN cliente c ON v.codigo_cliente = c.id
-            INNER JOIN cliente f ON v.codigo_funcionario = f.id
             ORDER BY v.numero_venda
         """
         cursor.execute(sql)
         return cursor.fetchall()
     except Exception as e:
-        print(f"Erro no Join 1: {e}")
+        print(f"Erro no relatorio de vendas e clientes: {e}")
         return []
     finally:
         cursor.close()
@@ -112,7 +110,7 @@ def join_itens_venda_detalhados():
         cursor.execute(sql)
         return cursor.fetchall()
     except Exception as e:
-        print(f"Erro no Join 2: {e}")
+        print(f"Erro no relatorio de itens de venda: {e}")
         return []
     finally:
         cursor.close()
@@ -137,7 +135,7 @@ def join_clientes_e_tasks():
         cursor.execute(sql)
         return cursor.fetchall()
     except Exception as e:
-        print(f"Erro no Join 3: {e}")
+        print(f"Erro no relatorio de clientes e tasks: {e}")
         return []
     finally:
         cursor.close()
@@ -150,21 +148,21 @@ def join_vendas_por_funcionario():
         cursor = conn.cursor()
         sql = """
             SELECT
-                f.id,
-                f.nome AS funcionario,
-                f.cargo,
-                COUNT(v.numero_venda) AS total_vendas,
-                COALESCE(SUM(v.valor_total), 0) AS faturamento_total
-            FROM cliente f
-            LEFT JOIN venda v ON f.id = v.codigo_funcionario
-            WHERE f.cargo IN ('Funcionario', 'Administrador')
-            GROUP BY f.id, f.nome, f.cargo
-            ORDER BY faturamento_total DESC
+                c.id,
+                c.nome AS usuario,
+                c.cargo,
+                COUNT(v.numero_venda) AS total_compras,
+                COALESCE(SUM(v.valor_total), 0) AS total_gasto
+            FROM cliente c
+            LEFT JOIN venda v ON c.id = v.codigo_cliente
+            WHERE LOWER(TRIM(c.cargo)) <> 'cliente'
+            GROUP BY c.id, c.nome, c.cargo
+            ORDER BY total_gasto DESC, c.id
         """
         cursor.execute(sql)
         return cursor.fetchall()
     except Exception as e:
-        print(f"Erro no Join 4: {e}")
+        print(f"Erro no relatorio de compras por usuario: {e}")
         return []
     finally:
         cursor.close()
@@ -194,7 +192,7 @@ def join_itens_com_cliente():
         cursor.execute(sql)
         return cursor.fetchall()
     except Exception as e:
-        print(f"Erro no Join de Itens e Clientes: {e}")
+        print(f"Erro no relatorio de itens e clientes: {e}")
         return []
     finally:
         cursor.close()

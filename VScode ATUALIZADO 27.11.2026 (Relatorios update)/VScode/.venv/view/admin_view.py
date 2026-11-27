@@ -1,5 +1,8 @@
-##.venv\view\funcionario_view.py
+##.venv\view\admin_view.py
+import getpass
 from decimal import Decimal
+from services.User_services import import_user, list_users, delete_user
+from services.produtos_services import list_produtos, add_produto, update_produto
 from services.task_services import (
     create_task,
     search_tasks,
@@ -11,7 +14,38 @@ from services.task_services import (
     join_vendas_por_funcionario,
     join_itens_com_cliente,
 )
-from services.produtos_services import list_produtos, add_produto, update_produto
+
+try:
+    import msvcrt
+except ImportError:
+    msvcrt = None
+
+
+def _ler_senha(mensagem: str = "Digite sua senha: ") -> str:
+    print(mensagem, end="", flush=True)
+
+    if msvcrt is None:
+        return getpass.getpass("")
+
+    chars = []
+    while True:
+        tecla = msvcrt.getwch()
+
+        if tecla in ("\r", "\n"):
+            print()
+            return "".join(chars)
+        elif tecla == "\x03":
+            print()
+            raise KeyboardInterrupt
+        elif tecla == "\b":
+            if chars:
+                chars.pop()
+                print("\b \b", end="", flush=True)
+        elif tecla in ("\x00", "\xe0"):
+            msvcrt.getwch()
+        elif tecla >= " ":
+            chars.append(tecla)
+            print("*", end="", flush=True)
 
 
 def _formatar_moeda(valor) -> str:
@@ -69,21 +103,21 @@ def _imprimir_tabela(colunas: list[str], linhas: list[tuple], mensagem_vazia: st
 
 
 def _exibir_relatorios_joins():
-    print("\n=== RELATORIOS ANALITICOS (JOINS) ===")
+    print("\n=== RELATORIOS ANALITICOS ===")
 
-    print("\n--- Vendas, Cliente e Funcionario ---")
+    print("\n--- Vendas e Cliente ---")
     dados_j1 = join_vendas_cliente_funcionario()
     linhas_j1 = [
-        (r[0], _formatar_data(r[1]), _formatar_moeda(r[2]), r[3], r[4], r[5])
+        (r[0], _formatar_data(r[1]), _formatar_moeda(r[2]), r[3], r[4])
         for r in dados_j1
     ]
     _imprimir_tabela(
-        ["Venda #", "Data", "Total", "Cliente", "Responsavel", "Cargo"],
+        ["Venda #", "Data", "Total", "Cliente", "Cargo"],
         linhas_j1,
         "Nenhuma venda registrada.",
     )
 
-    print("\n--- Join 2: Itens de Venda Detalhados ---")
+    print("\n--- Itens de Venda Detalhados ---")
     dados_j2 = join_itens_venda_detalhados()
     linhas_j2 = [
         (r[0], r[1], r[2], r[3], _formatar_moeda(r[4]), _formatar_moeda(r[5]))
@@ -103,19 +137,19 @@ def _exibir_relatorios_joins():
         "Nenhum cliente encontrado.",
     )
 
-    print("\n--- Vendas por Funcionario ---")
+    print("\n--- Compras por Usuario ---")
     dados_j4 = join_vendas_por_funcionario()
     linhas_j4 = [
         (r[0], r[1], r[2], r[3], _formatar_moeda(r[4]))
         for r in dados_j4
     ]
     _imprimir_tabela(
-        ["ID", "Funcionario", "Cargo", "Total Vendas", "Faturamento"],
+        ["ID", "Usuario", "Cargo", "Total Compras", "Total Gasto"],
         linhas_j4,
-        "Nenhum funcionario encontrado.",
+        "Nenhum registro encontrado.",
     )
 
-    print("\n--- tens Vendidos por Cliente (ID, Nome e Cargo) ---")
+    print("\n--- Itens Vendidos por Cliente (ID, Nome e Cargo) ---")
     dados_j5 = join_itens_com_cliente()
     linhas_j5 = [
         (r[0], r[1], r[2], r[3], r[4], r[5], _formatar_moeda(r[6]), _formatar_moeda(r[7]))
@@ -128,19 +162,21 @@ def _exibir_relatorios_joins():
     )
 
 
-def panel_funcionario(user_auth):
+def panel(user_auth):
     while True:
         print(f"\nBem vindo {user_auth[1]} ({user_auth[7]})")
         print("1 - Cadastrar Task")
         print("2 - Buscar Task")
         print("3 - Remover Task")
         print("4 - Atualizar Task")
-        print("5 - Adicionar Produto")
-        print("6 - Atualizar Produto")
-        print("7 - Relatorios")
-        print("8 - Deslogar")
+        print("5 - Relatorios")
+        print("6 - Criar conta de funcionario")
+        print("7 - Adicionar Produto")
+        print("8 - Atualizar Produto")
+        print("9 - Deletar Conta")
+        print("10 - Deslogar")
 
-        opcao = _ler_inteiro("Digite sua escolha: ")
+        opcao = _ler_inteiro('Digite sua escolha "tesqui": ')
         if opcao is None:
             continue
 
@@ -183,6 +219,19 @@ def panel_funcionario(user_auth):
                         print("O novo titulo nao pode ficar em branco.")
 
         elif opcao == 5:
+            _exibir_relatorios_joins()
+
+        elif opcao == 6:
+            nome = input("Digite o Nome completo do funcionario: ").strip()
+            email = input("Digite o Email: ").strip()
+            senha = _ler_senha("Digite a Senha: ")
+            telefone = input("Digite o telefone com DDD: ").strip()
+            endereco = input("Digite o endereço: ").strip()
+            cpf = _ler_senha("Digite o CPF: ")
+            cargo = input("Digite o cargo da conta (ex: Funcionario ou Administrador): ").strip()
+            import_user(nome, email, senha, telefone, endereco, cpf, cargo)
+
+        elif opcao == 7:
             nome = input("Digite o nome do produto: ").strip()
             descricao = input("Digite a descricao do produto: ").strip()
             preco = _ler_float("Digite o preco do produto: ")
@@ -192,7 +241,7 @@ def panel_funcionario(user_auth):
             else:
                 print("Nome do produto nao pode ficar em branco.")
 
-        elif opcao == 6:
+        elif opcao == 8:
             produtos = list_produtos()
             if not produtos:
                 print("Nenhum produto cadastrado.")
@@ -208,10 +257,25 @@ def panel_funcionario(user_auth):
                 if codigo_produto is not None and novo_preco is not None and novo_estoque is not None:
                     update_produto(codigo_produto, novo_preco, novo_estoque)
 
-        elif opcao == 7:
-            _exibir_relatorios_joins()
+        elif opcao == 9:
+            usuarios = list_users()
+            if not usuarios:
+                print("Nenhuma conta cadastrada.")
+            else:
+                print("\n--- Contas Cadastradas ---")
+                _imprimir_tabela(
+                    ["ID", "Nome", "Email", "Telefone", "Cargo"],
+                    usuarios,
+                )
+                user_id = _ler_inteiro("Digite o ID da conta para deletar: ")
+                if user_id is not None:
+                    confirmacao = input(f"Tem certeza que deseja deletar a conta ID {user_id}? (s/n): ").strip().lower()
+                    if confirmacao == "s":
+                        delete_user(user_id, user_auth[0])
+                    else:
+                        print("Operacao cancelada.")
 
-        elif opcao == 8:
+        elif opcao == 10:
             break
 
         else:
