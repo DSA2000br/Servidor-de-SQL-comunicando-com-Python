@@ -7,7 +7,7 @@ def criar_conexao():
             dbname='postgres',
             user='postgres',
             host='localhost',
-            password='senha', ##Digite a senha que você colocou no Dbeaver
+            password='203769', ##Digite a senha que você colocou no Dbeaver
             port='5432'
         )
         ##print ("A conexão foi realizada com sucesso") apenas ver se conectou
