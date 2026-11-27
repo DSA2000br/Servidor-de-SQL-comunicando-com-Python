@@ -1,16 +1,20 @@
-##.venv\config\db.py
 import psycopg2
+import os
+
 
 def criar_conexao():
+
     try:
         conn = psycopg2.connect(
-            dbname='postgres',
-            user='postgres',
-            host='localhost',
-            password='203769', ##Digite a senha que você colocou no Dbeaver
-            port='5432'
+            dbname=os.getenv("DB_NAME", "postgres"),
+            user=os.getenv("DB_USER", "postgres"),
+            host=os.getenv("DB_HOST", "localhost"),
+            password=os.getenv("DB_PASSWORD"),
+            port=os.getenv("DB_PORT", "5432")
         )
-        ##print ("A conexão foi realizada com sucesso") apenas ver se conectou
+
         return conn
-    except Exception as e:
-        print(f"A conexão falhou!\nCodigo de erro {e}")
+
+    except psycopg2.Error as e:
+        print(f"Falha na conexão com o banco: {e}")
+        return None

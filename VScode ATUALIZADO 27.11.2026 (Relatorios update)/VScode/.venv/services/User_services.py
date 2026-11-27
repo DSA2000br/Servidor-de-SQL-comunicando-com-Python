@@ -1,11 +1,17 @@
 ##.venv\services\User_services.py
 from config.db import criar_conexao
-
+from config.crypt import criptografar, verificar_senha
 
 def import_user(nome: str, email: str, senha: str, telefone: str, endereco: str, cpf: str, cargo: str = "Cliente"):
+    conn = None
+    cursor = None
     try:
         conn = criar_conexao()
+        if conn is None:
+         return
         cursor = conn.cursor()
+
+        senha_hash = criptografar(senha)
 
         sql = """
             INSERT INTO cliente (nome, email, senha, telefone, endereco, cpf, cargo)
@@ -16,26 +22,50 @@ def import_user(nome: str, email: str, senha: str, telefone: str, endereco: str,
         print(f"Conta ({cargo}) cadastrada com sucesso")
 
     except Exception as e:
+        if conn:
+            conn.rollback()
         print(f"Erro ao cadastrar conta: {e}")
     finally:
+     if cursor:
         cursor.close()
+     if conn:
         conn.close()
 
 
 def login(email: str, senha: str):
+    conn = None
+    cursor = None
+
     try:
         conn = criar_conexao()
+        if conn is None:
+         return None
         cursor = conn.cursor()
         sql = "SELECT * FROM cliente WHERE email = %s AND senha = %s"
         cursor.execute(sql, (email, senha))
         user = cursor.fetchone()
-        return user
+
+        if user is None:
+            return None
+        
+        colunas = [col[0] for col in cursor.description]
+        indice_senha = colunas.index("senha")
+
+        senha_hash = user[indice_senha]
+
+        if verificar_senha(senha, senha_hash):
+         return user
+        
+        return None
+    
     except Exception as e:
         print(f"Erro no login: {e}")
         return None
     finally:
-        cursor.close()
-        conn.close()
+     if cursor:
+      cursor.close()
+     if conn:
+      conn.close()
 
 
 def list_users():
